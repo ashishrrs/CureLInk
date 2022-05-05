@@ -2,6 +2,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework import authentication, permissions, status
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import *
 from .serializers import *
 import sys
@@ -249,6 +251,7 @@ def update_topic(request):
 def get_by_topic(request):
     data = JSONParser().parse(request)
     topic = data.get('topic', '')
+    email(request)
     if (id == ''):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
@@ -264,3 +267,11 @@ def get_by_topic(request):
         print(exc_type, exc_tb.tb_lineno)
         print(Arg)
         return Response({"exception": "An Exception Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def email(request):
+    subject = 'Thank you for registering to our site'
+    message = ' it  means a world to us '
+    email_from = settings.EMAIL_HOST_USER
+    recipient_list = ['ashish.18i061@gmail.com', ]
+    send_mail(subject, message, email_from, recipient_list)
