@@ -16,4 +16,5 @@ urlpatterns = [
     path('article/update_article/', update_article),
     path('subscriber/update_subscriber/', update_subscriber),
     path('topic/update_topic/', update_topic),
+    path('article/get_by_topic/', get_by_topic),
 ]

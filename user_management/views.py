@@ -243,3 +243,24 @@ def update_topic(request):
         print(exc_type, exc_tb.tb_lineno)
         print(Arg)
         return Response({"exception": "An Exception Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_by_topic(request):
+    data = JSONParser().parse(request)
+    topic = data.get('topic', '')
+    if (id == ''):
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    try:
+        topic_object = Topic.objects.get(name=topic)
+        if topic_object is None:
+            return Response("invalid topic")
+        article_objects = Article.objects.filter(topic=topic_object).all()
+        serializer = ArticleSerializer(article_objects, many=True)
+        return Response(serializer.data)
+
+    except Exception as Arg:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(exc_type, exc_tb.tb_lineno)
+        print(Arg)
+        return Response({"exception": "An Exception Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
