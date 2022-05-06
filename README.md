@@ -3,7 +3,7 @@
 * [General info](#general-info)
 * [Functionalities](#functionalities)
 * [Technologies](#technologies)
-* [ER DIAGRAM](#ER DIAGRAM)
+* [ER DIAGRAM](#er-diagram)
 
 ### General info
 NewsLetter webapp is a an app or a service which will send pre-decided content to a specific set of users[subscriber] at specified intervals/time. 
@@ -37,5 +37,7 @@ ___
 
 ### ER DIAGRAM
 ![Alt text](ER.png)
+
+There are two more table CrontabSchedule and PeriodicTask, but they are internally built by celery-beat.(So, I didn't include them in ER)
 
 
