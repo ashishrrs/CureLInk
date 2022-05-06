@@ -1,9 +1,17 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from celery import Celery
 from rest_framework.parsers import JSONParser
 from rest_framework import authentication, permissions, status
 from django.core.mail import send_mail
 from django.conf import settings
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from celery.schedules import crontab
+from django.http.response import HttpResponse
+from django.shortcuts import render
+import uuid
+import json
+
 from .models import *
 from .serializers import *
 import sys
@@ -21,15 +29,27 @@ def add_article(request):
     data = JSONParser().parse(request)
     name = data.get('name', '')
     topic = data.get('topic', '')
-    notification_time = data.get('notification_time', '')
+    hours = data.get('hours', '')
     description = data.get('description', '')
+    minutes = data.get('minutes', '')
+    app = Celery('user_management')
+    app.conf.enable_utc = False
+
+    app.conf.update(timezone='Asia/Kolkata')
+    crontab_objects = CrontabSchedule.objects.filter(
+        hour=hours, minute=minutes).first()
+    if crontab_objects is None:
+        schedule, created = CrontabSchedule.objects.get_or_create(
+            hour=hours, minute=minutes)
+        task = PeriodicTask.objects.create(crontab=schedule, name="schedule_mail_task_" +
+                                           f"{uuid.uuid1()}", task='user_management.tasks.send_mail_func', one_off=True, args=json.dumps([hours, minutes]))
     if (name == ''):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
         c = Topic.objects.get_or_create(name=topic)[0]
         article = Article.objects.get_or_create(name=name,
-                                                description=description, notification_time=notification_time,
-                                                topic=c)
+                                                description=description, hours=hours, minutes=minutes,
+                                                topic=c, published=0)
         return Response(status=status.HTTP_201_CREATED)
 
     except Exception as Arg:
@@ -175,8 +195,13 @@ def update_article(request):
     id = data.get('id', '')
     name = data.get('name', '')
     topic = data.get('topic', '')
-    notification_time = data.get('notification_time', '')
+    hours = data.get('hour', '')
+    app = Celery('user_management')
+    app.conf.enable_utc = False
+
+    app.conf.update(timezone='Asia/Kolkata')
     description = data.get('description', '')
+    minutes = data.get('minutes', '')
     if (id == ''):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
@@ -186,7 +211,16 @@ def update_article(request):
         c = Topic.objects.get_or_create(name=topic)[0]
         article_object.topic = c
         article_object.name = name
-        article_object.notification_time = notification_time
+        if article_object.published == 0:
+            crontab_objects = CrontabSchedule.objects.filter(
+                hour=hours, minute=minutes).all()
+            if crontab_objects is None:
+                schedule, created = CrontabSchedule.objects.get_or_create(
+                    hour=hours, minute=minutes)
+                task = PeriodicTask.objects.create(crontab=schedule, name="schedule_mail_task_" +
+                                                   uuid.uuid1(), task='user_management.tasks.send_mail_func', one_off=True, args=json.dumps([hours, minutes]))
+        article_object.hours = hours
+        article_object.minutes = minutes
         article_object.description = description
         article_object.save()
         return Response(status=status.HTTP_200_OK)
@@ -251,7 +285,6 @@ def update_topic(request):
 def get_by_topic(request):
     data = JSONParser().parse(request)
     topic = data.get('topic', '')
-    email(request)
     if (id == ''):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
@@ -267,11 +300,3 @@ def get_by_topic(request):
         print(exc_type, exc_tb.tb_lineno)
         print(Arg)
         return Response({"exception": "An Exception Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-def email(request):
-    subject = 'CureLink Newsletter'
-    message = ' it  means a world to us '
-    email_from = settings.EMAIL_HOST_USER
-    recipient_list = ['ashish.18i061@gmail.com', ]
-    send_mail(subject, message, email_from, recipient_list)

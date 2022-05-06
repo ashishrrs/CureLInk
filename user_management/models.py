@@ -27,7 +27,9 @@ class Subscriber(models.Model):
 class Article(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(null=True)
-    notification_time = models.TimeField()
+    hours = models.IntegerField()
+    minutes = models.IntegerField()
+    published = models.BooleanField()
     topic = models.ForeignKey(Topic, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):

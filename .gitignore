@@ -1,2 +1,6 @@
-db.sqlite3
+/static/**
+!/static
+__pycache__
+.vscode
 temp.txt
+db.sqlite3
